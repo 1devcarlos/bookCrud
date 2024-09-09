@@ -4,41 +4,44 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Book;
+use App\Services\BookService;
 use DB;
 use Illuminate\Http\Request;
 use Validator;
 
 class BookController extends Controller
 {
+
+  protected $bookService;
+  public function __construct(BookService $bookService)
+  {
+    $this->bookService = $bookService;
+  }
   public function index()
   {
     $userId = auth('api')->id();
-    if (!isset($userId)) {
+    if (!$userId) {
       return response()->json([
         'status' => 'error',
         'message' => 'Unauthorized',
         'books' => null
-      ]);
+      ], 401);
     }
-    $books = DB::table('books')->where('user_id', $userId)->get();
-    if (!isset($books)) {
+    $books = $this->bookService->getBooksByUserId($userId);
+
+    if ($books->isEmpty()) {
       return response()->json([
         'status' => 'error',
         'message' => 'No books found',
         'books' => null
-      ]);
-    }
-
-    $bookArr = (array) [];
-    foreach ($books as $book) {
-      array_push($bookArr, $book);
+      ], 404);
     }
 
     return response()->json([
       'status' => 'success',
       'message' => 'Books successfully retrieved',
-      'books' => $bookArr
-    ]);
+      'books' => $books
+    ], 200);
   }
 
   public function show(string|int $id)
@@ -48,24 +51,25 @@ class BookController extends Controller
       return response()->json([
         'status' => 'error',
         'message' => 'Unauthorized',
-        'books' => null
-      ]);
+        'book' => null
+      ], 401);
     }
-    $book = DB::table('books')->where('user_id', $userId)->where('id', $id)->first();
-    if ($userId !== $book->user_id) {
+
+    $book = $this->bookService->getBookByIdAndUserId($id, $userId);
+
+    if (!$book) {
       return response()->json([
         'status' => 'error',
-        'message' => 'The book you are trying to access does not belong to you.',
+        'message' => 'Book not found or does not belong to you',
         'book' => null
-      ]);
+      ], 404);
     }
 
     return response()->json([
       'status' => 'success',
       'message' => 'Book successfully retrieved!',
       'book' => $book
-    ]);
-
+    ], 200);
   }
 
   public function store(Request $request)
@@ -79,7 +83,11 @@ class BookController extends Controller
       return response()->json([$validator->errors()], 400);
     }
 
-    $book = auth('api')->user()->books()->create($request->only('title', 'description'));
+    $book = $this->bookService->createBook([
+      'title' => $request->title,
+      'description' => $request->description,
+      'user_id' => auth('api')->id(),
+    ]);
 
     return response()->json($book, 201);
   }
@@ -102,16 +110,16 @@ class BookController extends Controller
       ], 400);
     }
 
-
     $userId = auth('api')->id();
     if (!isset($userId)) {
       return response()->json(['error' => 'Unauthorized'], 401);
     }
-    $book = DB::table('books')->where('user_id', $userId)->where('id', $bookId)->first();
-    if (!isset($book)) {
+    $book = $this->bookService->getBookByIdAndUserId($bookId, $userId);
+
+    if (!$book) {
       return response()->json([
         'status' => 'error',
-        'message' => 'Book not found. Please verify the id of the book you are trying to access it.',
+        'message' => 'Book not found or does not belong to you',
         'book' => null
       ]);
     }
@@ -124,35 +132,35 @@ class BookController extends Controller
       ]);
     }
 
-    DB::table('books')->where('id', $bookId)->update($request->only('title', 'description'));
-
-    $updatedBook = DB::table('books')->where('id', $bookId)->first();
+    $updatedBook = $this->bookService->updateBook($bookId, $request->only('title', 'description'));
 
     return response()->json([
       'status' => 'success',
       'message' => 'Book successfully updated!',
       'book' => $updatedBook
-    ]);
+    ], 200);
 
   }
 
   public function destroy(string|int $bookId)
   {
     $userId = auth('api')->id();
-    $book = DB::table('books')->where('id', $bookId)->first();
-    if ($book->user_id !== $userId) {
+
+    $book = $this->bookService->getBookByIdAndUserId($bookId, $userId);
+
+    if (!$book || $book->user_id !== $userId) {
       return response()->json([
         'status' => 'error',
-        'message' => 'The book you are trying to access it does not belong to you.',
+        'message' => 'Book not found or does not belong to you',
         'book' => null
       ]);
     }
 
-    DB::table('books')->where('id', $bookId)->delete();
+    $this->bookService->deleteBook($bookId);
 
     return response()->json([
       'status' => 'success',
       'message' => 'Book successfully deleted'
-    ]);
+    ], 200);
   }
 }
