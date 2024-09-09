@@ -3,17 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Book;
-use Auth;
-use DB;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class FavoriteController extends Controller
 {
   public function index(): JsonResponse
   {
-    $userId = auth('api')->user();
+    $userId = auth('api')->id();
     if (!isset($userId)) {
       return response()->json(['error' => 'Unauthorized'], 401);
     }
@@ -90,6 +87,5 @@ class FavoriteController extends Controller
       'status' => 'success',
       'message' => "Book successfully removed from user's favorite",
     ]);
-
   }
 }
