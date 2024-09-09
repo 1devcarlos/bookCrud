@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use App\Services\AuthService;
-use Hash;
 use Illuminate\Http\Request;
+use Validator;
 
 class AuthController extends Controller
 {
@@ -19,11 +18,16 @@ class AuthController extends Controller
   public function register(Request $request)
   {
     // Valida a request
-    $request->validate([
+    $validator = Validator::make($request->all(), [
       'name' => 'required|string|max:255',
       'email' => 'required|string|email|max:255|unique:users',
       'password' => 'required|string|min:6',
     ]);
+
+    // Retorna erros de validação dos campos caso existam.
+    if ($validator->fails()) {
+      return response()->json([$validator->errors()], 400);
+    }
 
     // Chama o serviço que cadastra o usuário.
     $user = $this->authService->register($request->all());
@@ -38,10 +42,15 @@ class AuthController extends Controller
   public function login(Request $request)
   {
     // Valida a request.
-    $request->validate([
+    $validator = Validator::make($request->all(), [
       'email' => 'required|string|email',
       'password' => 'required|string',
     ]);
+
+    // Retorna erros de validação dos campos caso existam.
+    if ($validator->fails()) {
+      return response()->json([$validator->errors()], 400);
+    }
 
     // Chama o serviço que loga o usuário.
     $result = $this->authService->login($request->only('email', 'password'));
@@ -53,7 +62,7 @@ class AuthController extends Controller
     return response()->json($result);
   }
 
-  public function logout(Request $request)
+  public function logout()
   {
     // Chama o service que desloga o usuario
     $result = $this->authService->logout();

@@ -32,7 +32,7 @@ class AuthService
     if (!$token) {
       return [
         'status' => 'error',
-        'message' => 'Unauthorized',
+        'message' => 'Invalid Credentials',
         'token' => null,
       ];
     }
