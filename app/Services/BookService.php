@@ -1,6 +1,8 @@
 <?php
 namespace App\Services;
+use App\Jobs\SendBookCreatedEmail;
 use App\Repositories\BookRepository;
+use Auth;
 
 class BookService
 {
@@ -24,7 +26,13 @@ class BookService
   public function createBook(array $data)
   {
     // return $this->bookRepository->createBook($bookId, $data);
-    return $this->bookRepository->createBook($data);
+    $book = $this->bookRepository->createBook($data);
+
+    $user = Auth::user();
+
+    SendBookCreatedEmail::dispatch($user, $book);
+
+    return $book;
   }
 
   public function updateBook(string|int $bookId, array $data)

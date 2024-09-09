@@ -89,7 +89,11 @@ class BookController extends Controller
       'user_id' => auth('api')->id(),
     ]);
 
-    return response()->json($book, 201);
+    return response()->json([
+      'status' => 'success',
+      'message' => 'Book successfully created',
+      'book' => $book
+    ], 201);
   }
 
   public function update(Request $request, string|int $bookId)
