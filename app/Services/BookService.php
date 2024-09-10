@@ -1,5 +1,7 @@
 <?php
+
 namespace App\Services;
+
 use App\Jobs\SendBookCreatedEmail;
 use App\Repositories\BookRepository;
 use Auth;
@@ -11,6 +13,11 @@ class BookService
   public function __construct(BookRepository $bookRepository)
   {
     $this->bookRepository = $bookRepository;
+  }
+
+  public function getAllBooksForUser(int $userId)
+  {
+    return $this->bookRepository->getAllBooksWithFavoriteStatus($userId);
   }
 
   public function getBooksByUserId(string|int $userId)
@@ -28,7 +35,7 @@ class BookService
     // return $this->bookRepository->createBook($bookId, $data);
     $book = $this->bookRepository->createBook($data);
 
-    $user = Auth::user();
+    $user = auth('api')->user();
 
     SendBookCreatedEmail::dispatch($user, $book);
 

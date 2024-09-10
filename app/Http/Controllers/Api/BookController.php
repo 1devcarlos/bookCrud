@@ -5,9 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Book;
 use App\Services\BookService;
-use DB;
 use Illuminate\Http\Request;
-use Validator;
+use Illuminate\Support\Facades\Validator;
 
 class BookController extends Controller
 {
@@ -27,15 +26,7 @@ class BookController extends Controller
         'books' => null
       ], 401);
     }
-    $books = $this->bookService->getBooksByUserId($userId);
-
-    if ($books->isEmpty()) {
-      return response()->json([
-        'status' => 'error',
-        'message' => 'No books found',
-        'books' => null
-      ], 404);
-    }
+    $books = $this->bookService->getAllBooksForUser($userId);
 
     return response()->json([
       'status' => 'success',
@@ -143,7 +134,6 @@ class BookController extends Controller
       'message' => 'Book successfully updated!',
       'book' => $updatedBook
     ], 200);
-
   }
 
   public function destroy(string|int $bookId)
